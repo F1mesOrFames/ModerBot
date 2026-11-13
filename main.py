@@ -78,7 +78,8 @@ def apply_punishment(chat_id, user_id, hours, ptype):
             can_add_web_page_previews=False
         )
         try:
-            bot.restrict_chat_member(chat_id, user_id, perms, until_date=until)
+            # Явно указываем все аргументы, чтобы не было ошибки
+            bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=perms, until_date=until)
             return f"🔇 Замучен на {hours} ч."
         except Exception as e:
             return f"Ошибка мута: {e}"
