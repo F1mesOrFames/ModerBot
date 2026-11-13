@@ -8,8 +8,7 @@ from telebot import types
 from flask import Flask
 
 # ==================== НАСТРОЙКИ ====================
-# На Render токен берется из переменных окружения (Environment Variables)
-BOT_TOKEN = os.environ.get('BOT_TOKEN', '9146779687:AAHjOZITm8MsDp26jCXcSAyT1rPM6O1rx5I') 
+BOT_TOKEN = os.environ.get('BOT_TOKEN', 'ВСТАВЬ_СЮДА_ТОКЕН_ДЛЯ_ЛОКАЛЬНОГО_ТЕСТА') 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Словарь правил: (часы, тип_наказания, название)
@@ -64,7 +63,7 @@ def apply_punishment(chat_id, user_id, hours, ptype):
     if ptype == 'ban':
         until = int(time.time()) + (hours * 3600) if hours > 0 else 0
         try:
-            bot.ban_chat_member(chat_id, user_id, until_date=until)
+            bot.ban_chat_member(chat_id=chat_id, user_id=user_id, until_date=until)
             return f"🔨 Забанен на {hours} ч." if hours > 0 else "🔨 Забанен навсегда."
         except Exception as e:
             return f"Ошибка бана: {e}"
@@ -78,7 +77,7 @@ def apply_punishment(chat_id, user_id, hours, ptype):
             can_add_web_page_previews=False
         )
         try:
-            # Явно указываем все аргументы, чтобы не было ошибки
+            # ИСПРАВЛЕНО: явно указываем все аргументы, чтобы избежать ошибки
             bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=perms, until_date=until)
             return f"🔇 Замучен на {hours} ч."
         except Exception as e:
@@ -130,16 +129,58 @@ def handle_rule_violation(message):
               f"⚠️ Варнов: {warn_count}")
     bot.reply_to(message, report)
 
-# ==================== СБРОС ВАРНОВ ====================
+# ==================== РАЗМУТ, РАЗБАН И СБРОС ВАРНОВ ====================
+@bot.message_handler(commands=['unmute'])
+def unmute_user(message):
+    chat_id = message.chat.id
+    if not is_admin(chat_id, message.from_user.id):
+        return
+    if not message.reply_to_message:
+        bot.reply_to(message, "⚠️ Ответьте на сообщение пользователя, которого нужно размутить.")
+        return
+
+    target_id = message.reply_to_message.from_user.id
+    
+    # Выдаем права обратно
+    perms = types.ChatPermissions(
+        can_send_messages=True,
+        can_send_media_messages=True,
+        can_send_other_messages=True,
+        can_add_web_page_previews=True
+    )
+    try:
+        bot.restrict_chat_member(chat_id=chat_id, user_id=target_id, permissions=perms)
+        bot.reply_to(message, f"🔊 Пользователь {message.reply_to_message.from_user.first_name} размучен.")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка размута: {e}")
+
+@bot.message_handler(commands=['unban'])
+def unban_user(message):
+    chat_id = message.chat.id
+    if not is_admin(chat_id, message.from_user.id):
+        return
+    if not message.reply_to_message:
+        bot.reply_to(message, "⚠️ Ответьте на сообщение пользователя, которого нужно разбанить.")
+        return
+
+    target_id = message.reply_to_message.from_user.id
+    
+    try:
+        bot.unban_chat_member(chat_id=chat_id, user_id=target_id)
+        bot.reply_to(message, f"🔓 Пользователь {message.reply_to_message.from_user.first_name} разбанен.")
+    except Exception as e:
+        bot.reply_to(message, f"Ошибка разбана: {e}")
+
 @bot.message_handler(commands=['reset_warns'])
 def reset_warns(message):
-    if not is_admin(message.chat.id, message.from_user.id):
+    chat_id = message.chat.id
+    if not is_admin(chat_id, message.from_user.id):
         return
     if not message.reply_to_message:
         bot.reply_to(message, "Ответьте на сообщение пользователя.")
         return
     target_id = message.reply_to_message.from_user.id
-    cursor.execute('UPDATE warns SET count = 0 WHERE user_id = ? AND chat_id = ?', (target_id, message.chat.id))
+    cursor.execute('UPDATE warns SET count = 0 WHERE user_id = ? AND chat_id = ?', (target_id, chat_id))
     conn.commit()
     bot.reply_to(message, "✅ Варны сброшены.")
 
