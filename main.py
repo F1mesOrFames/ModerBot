@@ -9,7 +9,7 @@ from flask import Flask
 
 # ==================== НАСТРОЙКИ ====================
 # На Render токен берется из переменных окружения (Environment Variables)
-BOT_TOKEN = os.environ.get('BOT_TOKEN', 'ВСТАВЬ_СЮДА_ТОКЕН_ДЛЯ_ЛОКАЛЬНОГО_ТЕСТА') 
+BOT_TOKEN = os.environ.get('BOT_TOKEN', '9146779687:AAHjOZITm8MsDp26jCXcSAyT1rPM6O1rx5I') 
 bot = telebot.TeleBot(BOT_TOKEN)
 
 # Словарь правил: (часы, тип_наказания, название)
