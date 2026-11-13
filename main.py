@@ -63,29 +63,22 @@ def apply_punishment(chat_id, user_id, hours, ptype):
     if ptype == 'ban':
         until = int(time.time()) + (hours * 3600) if hours > 0 else 0
         try:
-            bot.ban_chat_member(chat_id=chat_id, user_id=user_id, until_date=until)
+            bot.ban_chat_member(chat_id, user_id, until_date=until)
             return f"🔨 Забанен на {hours} ч." if hours > 0 else "🔨 Забанен навсегда."
         except Exception as e:
             return f"Ошибка бана: {e}"
             
     elif ptype == 'mute':
         until = int(time.time()) + (hours * 3600)
-        perms = types.ChatPermissions(
-            can_send_messages=False,
-            can_send_media_messages=False,
-            can_send_other_messages=False,
-            can_add_web_page_previews=False
-        )
         try:
-            # ИСПРАВЛЕНО: явно указываем все аргументы, чтобы избежать ошибки
-            bot.restrict_chat_member(chat_id=chat_id, user_id=user_id, permissions=perms, until_date=until)
+            # Передаем права через простые флаги (работает на всех версиях библиотеки)
+            bot.restrict_chat_member(chat_id, user_id, until_date=until, can_send_messages=False, can_send_media_messages=False, can_send_other_messages=False, can_add_web_page_previews=False)
             return f"🔇 Замучен на {hours} ч."
         except Exception as e:
             return f"Ошибка мута: {e}"
             
     else: # warn
         return "⚠️ Только предупреждение (мут не выдан)."
-
 # ==================== КОМАНДЫ МОДЕРАЦИИ ====================
 @bot.message_handler(commands=list(RULES.keys()))
 def handle_rule_violation(message):
